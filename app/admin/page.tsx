@@ -544,9 +544,8 @@ export default function AdminPage() {
           )}
         </div>
       </div>
-    </div>
 
-    {/* 측정값 입력/수정 모달 */}
+      {/* 측정값 입력/수정 모달 */}
     {showMeasureModal && measureSlot && (
       <div
         className="fixed inset-0 bg-black/50 flex items-end justify-center z-50"
@@ -628,5 +627,6 @@ export default function AdminPage() {
         </div>
       </div>
     )}
+    </div>
   )
 }
