@@ -10,31 +10,58 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'date 파라미터가 필요합니다.' }, { status: 400 })
   }
 
-  const { data, error } = await supabaseAdmin
+  // 1. 슬롯 조회
+  const { data: slots, error: slotsError } = await supabaseAdmin
     .from('slots')
-    .select(`
-      id,
-      date,
-      time_slot,
-      is_booked,
-      bookings (
-        id,
-        participant_name,
-        participant_birthdate,
-        measurements (
-          id,
-          height,
-          weight,
-          bmi,
-          grip_strength
-        )
-      )
-    `)
+    .select('id, date, time_slot, is_booked')
     .eq('date', date)
     .order('time_slot')
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data, { headers: { 'Cache-Control': 'no-store' } })
+  if (slotsError) return NextResponse.json({ error: slotsError.message }, { status: 500 })
+  if (!slots?.length) return NextResponse.json([], { headers: { 'Cache-Control': 'no-store' } })
+
+  // 2. 예약된 슬롯의 booking 조회
+  const bookedSlotIds = slots.filter(s => s.is_booked).map(s => s.id)
+
+  const { data: bookings } = bookedSlotIds.length
+    ? await supabaseAdmin
+        .from('bookings')
+        .select('id, slot_id, participant_name, participant_birthdate')
+        .in('slot_id', bookedSlotIds)
+    : { data: [] }
+
+  const bookingList = bookings ?? []
+
+  // 3. 측정값 조회
+  const bookingIds = bookingList.map(b => b.id)
+
+  const { data: measurements } = bookingIds.length
+    ? await supabaseAdmin
+        .from('measurements')
+        .select('id, booking_id, height, weight, bmi, grip_strength')
+        .in('booking_id', bookingIds)
+    : { data: [] }
+
+  const measurementList = measurements ?? []
+
+  // 4. 데이터 조합
+  const result = slots.map(slot => {
+    const booking = bookingList.find(b => b.slot_id === slot.id)
+    if (!booking) return { ...slot, bookings: [] }
+
+    const measurement = measurementList.find(m => m.booking_id === booking.id)
+    return {
+      ...slot,
+      bookings: [{
+        id: booking.id,
+        participant_name: booking.participant_name,
+        participant_birthdate: booking.participant_birthdate,
+        measurements: measurement ? [measurement] : [],
+      }],
+    }
+  })
+
+  return NextResponse.json(result, { headers: { 'Cache-Control': 'no-store' } })
 }
 
 // POST /api/bookings - 예약 신청
