@@ -203,6 +203,19 @@ export default function AdminPage() {
     }
   }
 
+  async function cancelBooking(bookingId: string, slotId: string) {
+    if (!confirm('예약을 취소하시겠습니까? 측정값도 함께 삭제됩니다.')) return
+    const res = await fetch(`/api/admin/bookings/${bookingId}`, { method: 'DELETE' })
+    if (res.ok) {
+      setSlots(prev => prev.map(s =>
+        s.id !== slotId ? s : { ...s, is_booked: false, bookings: [] }
+      ))
+    } else {
+      const d = await res.json()
+      alert(d.error || '취소 실패')
+    }
+  }
+
   function openMeasureModal(slot: SlotWithBooking) {
     const m = slot.bookings?.[0]?.measurements?.[0]
     setMeasureSlot(slot)
@@ -562,10 +575,12 @@ export default function AdminPage() {
                     return (
                       <div
                         key={slot.id}
-                        className="border border-gray-200 rounded-xl p-3.5 cursor-pointer hover:shadow-md transition-shadow"
-                        onClick={() => openMeasureModal(slot)}
+                        className="border border-gray-200 rounded-xl p-3.5"
                       >
-                        <div className="flex justify-between items-start">
+                        <div
+                          className="flex justify-between items-start cursor-pointer"
+                          onClick={() => openMeasureModal(slot)}
+                        >
                           <div>
                             <p className="font-bold text-gray-800">{b?.participant_name}</p>
                             <p className="text-xs text-gray-400 mt-0.5">{b?.participant_birthdate}</p>
@@ -582,6 +597,14 @@ export default function AdminPage() {
                           ) : (
                             <span className="bg-yellow-100 text-yellow-600 text-xs px-2 py-1 rounded-full">입력 필요 ›</span>
                           )}
+                        </div>
+                        <div className="mt-2 pt-2 border-t border-gray-100 flex justify-end">
+                          <button
+                            onClick={() => b && cancelBooking(b.id, slot.id)}
+                            className="text-xs text-red-400 hover:text-red-600"
+                          >
+                            예약 취소
+                          </button>
                         </div>
                       </div>
                     )
