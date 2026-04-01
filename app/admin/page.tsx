@@ -354,7 +354,7 @@ export default function AdminPage() {
                           </span>
                           {slot.is_booked && slot.bookings?.[0] && (
                             <span className="ml-2 text-xs text-blue-600">
-                              {slot.bookings[0].participant_name}
+                              {slot.bookings?.[0]?.participant_name}
                             </span>
                           )}
                         </div>
