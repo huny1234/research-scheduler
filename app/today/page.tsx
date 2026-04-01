@@ -141,8 +141,6 @@ export default function TodayPage() {
           })
         )
         setShowModal(false)
-        // 백그라운드에서 서버 데이터 동기화
-        fetchData()
       }
     } catch {
       setSaveError('네트워크 오류가 발생했습니다.')
