@@ -93,7 +93,7 @@ export default function TodayPage() {
       setSaveError('모든 값을 입력해주세요.')
       return
     }
-    const booking = selectedSlot.bookings[0]
+    const booking = selectedSlot.bookings?.[0]
     if (!booking) return
 
     setSaving(true)
@@ -150,7 +150,7 @@ export default function TodayPage() {
   const dayName = ['일', '월', '화', '수', '목', '금', '토'][now.getDay()]
 
   const bookedSlots = slots.filter((s) => s.is_booked)
-  const measuredCount = bookedSlots.filter((s) => s.bookings[0]?.measurements.length > 0).length
+  const measuredCount = bookedSlots.filter((s) => s.bookings?.[0]?.measurements?.length > 0).length
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -287,7 +287,7 @@ export default function TodayPage() {
               <div>
                 <h3 className="text-xl font-bold text-gray-800">측정값 입력</h3>
                 <p className="text-sm text-gray-400 mt-0.5">
-                  {formatTime(selectedSlot.time_slot)} — {selectedSlot.bookings[0]?.participant_name}
+                  {formatTime(selectedSlot.time_slot)} — {selectedSlot.bookings?.[0]?.participant_name}
                 </p>
               </div>
               <button
