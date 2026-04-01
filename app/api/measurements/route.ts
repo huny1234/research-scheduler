@@ -18,22 +18,35 @@ export async function POST(request: NextRequest) {
   const h = parseFloat(height)
   const w = parseFloat(weight)
   const bmi = parseFloat((w / ((h / 100) ** 2)).toFixed(2))
+  const g = parseFloat(grip_strength)
 
-  const { data, error } = await supabaseAdmin
+  // 기존 측정값 존재 여부 확인
+  const { data: existing } = await supabaseAdmin
     .from('measurements')
-    .upsert(
-      {
-        booking_id,
-        height: h,
-        weight: w,
-        bmi,
-        grip_strength: parseFloat(grip_strength),
-      },
-      { onConflict: 'booking_id' }
-    )
-    .select()
-    .single()
+    .select('id')
+    .eq('booking_id', booking_id)
+    .maybeSingle()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data, { status: 201 })
+  if (existing) {
+    // 수정
+    const { data, error } = await supabaseAdmin
+      .from('measurements')
+      .update({ height: h, weight: w, bmi, grip_strength: g })
+      .eq('booking_id', booking_id)
+      .select()
+      .single()
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(data)
+  } else {
+    // 신규 입력
+    const { data, error } = await supabaseAdmin
+      .from('measurements')
+      .insert({ booking_id, height: h, weight: w, bmi, grip_strength: g })
+      .select()
+      .single()
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(data, { status: 201 })
+  }
 }

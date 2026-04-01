@@ -119,7 +119,9 @@ export default function TodayPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setSaveError(data.error || '저장 실패')
+        setSaveError(data.error || `저장 실패 (${res.status})`)
+      } else if (!data || !data.id) {
+        setSaveError('저장 응답이 올바르지 않습니다. 다시 시도해주세요.')
       } else {
         // 로컬 상태 즉시 업데이트
         setSlots((prev) =>
