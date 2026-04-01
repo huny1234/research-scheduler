@@ -76,6 +76,8 @@ export default function AdminPage() {
   const [viewTo, setViewTo] = useState('')
   const [slots, setSlots] = useState<SlotWithBooking[]>([])
   const [loadingSlots, setLoadingSlots] = useState(false)
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set())
+  const [bulkDeleting, setBulkDeleting] = useState(false)
 
   useEffect(() => {
     fetch('/api/admin/check')
@@ -158,10 +160,46 @@ export default function AdminPage() {
   async function deleteSlot(id: string) {
     if (!confirm('이 슬롯을 삭제하시겠습니까?')) return
     const res = await fetch(`/api/admin/slots/${id}`, { method: 'DELETE' })
-    if (res.ok) setSlots((prev) => prev.filter((s) => s.id !== id))
-    else {
+    if (res.ok) {
+      setSlots((prev) => prev.filter((s) => s.id !== id))
+      setCheckedIds((prev) => { const n = new Set(prev); n.delete(id); return n })
+    } else {
       const d = await res.json()
       alert(d.error || '삭제 실패')
+    }
+  }
+
+  const emptySlotIds = slots.filter(s => !s.is_booked).map(s => s.id)
+  const allChecked = emptySlotIds.length > 0 && emptySlotIds.every(id => checkedIds.has(id))
+
+  function toggleCheck(id: string) {
+    setCheckedIds(prev => {
+      const n = new Set(prev)
+      n.has(id) ? n.delete(id) : n.add(id)
+      return n
+    })
+  }
+
+  function toggleAll() {
+    if (allChecked) {
+      setCheckedIds(new Set())
+    } else {
+      setCheckedIds(new Set(emptySlotIds))
+    }
+  }
+
+  async function deleteChecked() {
+    if (checkedIds.size === 0) return
+    if (!confirm(`선택한 ${checkedIds.size}개 슬롯을 삭제하시겠습니까?`)) return
+    setBulkDeleting(true)
+    try {
+      await Promise.all(
+        Array.from(checkedIds).map(id => fetch(`/api/admin/slots/${id}`, { method: 'DELETE' }))
+      )
+      setSlots(prev => prev.filter(s => !checkedIds.has(s.id)))
+      setCheckedIds(new Set())
+    } finally {
+      setBulkDeleting(false)
     }
   }
 
@@ -409,40 +447,74 @@ export default function AdminPage() {
                 </button>
 
                 {slots.length > 0 && (
-                  <div className="space-y-1.5 max-h-80 overflow-y-auto">
-                    {slots.map((slot) => (
-                      <div
-                        key={slot.id}
-                        className="flex items-center justify-between py-2 px-1 border-b border-gray-100 last:border-0"
-                      >
-                        <div>
-                          <span className="text-sm font-semibold text-gray-800">
-                            {fmtDate(slot.date)} {fmt(slot.time_slot)}
-                          </span>
-                          {slot.is_booked && slot.bookings?.[0] && (
-                            <span className="ml-2 text-xs text-blue-600">
-                              {slot.bookings?.[0]?.participant_name}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {slot.is_booked ? (
-                            <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">예약됨</span>
-                          ) : (
-                            <>
-                              <span className="text-xs bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">빈 슬롯</span>
-                              <button
-                                onClick={() => deleteSlot(slot.id)}
-                                className="text-xs text-red-400 hover:text-red-600"
-                              >
-                                삭제
-                              </button>
-                            </>
-                          )}
-                        </div>
+                  <>
+                    {/* 전체선택 / 선택삭제 */}
+                    {emptySlotIds.length > 0 && (
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={allChecked}
+                            onChange={toggleAll}
+                            className="w-4 h-4 accent-blue-600"
+                          />
+                          전체 선택 ({emptySlotIds.length}개)
+                        </label>
+                        {checkedIds.size > 0 && (
+                          <button
+                            onClick={deleteChecked}
+                            disabled={bulkDeleting}
+                            className="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg font-semibold disabled:opacity-50"
+                          >
+                            {bulkDeleting ? '삭제 중...' : `선택 삭제 (${checkedIds.size}개)`}
+                          </button>
+                        )}
                       </div>
-                    ))}
-                  </div>
+                    )}
+
+                    <div className="space-y-1.5 max-h-80 overflow-y-auto">
+                      {slots.map((slot) => (
+                        <div
+                          key={slot.id}
+                          className="flex items-center justify-between py-2 px-1 border-b border-gray-100 last:border-0"
+                        >
+                          <div className="flex items-center gap-2">
+                            {!slot.is_booked && (
+                              <input
+                                type="checkbox"
+                                checked={checkedIds.has(slot.id)}
+                                onChange={() => toggleCheck(slot.id)}
+                                className="w-4 h-4 accent-blue-600"
+                              />
+                            )}
+                            <span className="text-sm font-semibold text-gray-800">
+                              {fmtDate(slot.date)} {fmt(slot.time_slot)}
+                            </span>
+                            {slot.is_booked && slot.bookings?.[0] && (
+                              <span className="text-xs text-blue-600">
+                                {slot.bookings?.[0]?.participant_name}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {slot.is_booked ? (
+                              <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">예약됨</span>
+                            ) : (
+                              <>
+                                <span className="text-xs bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">빈 슬롯</span>
+                                <button
+                                  onClick={() => deleteSlot(slot.id)}
+                                  className="text-xs text-red-400 hover:text-red-600"
+                                >
+                                  삭제
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
             </>
