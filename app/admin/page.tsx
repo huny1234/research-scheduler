@@ -419,7 +419,7 @@ export default function AdminPage() {
                   <p className="text-xs text-gray-400">총 {bookedSlots.length}건</p>
                   {bookedSlots.map((slot) => {
                     const b = slot.bookings?.[0]
-                    const m = b?.measurements[0]
+                    const m = b?.measurements?.[0]
                     return (
                       <div key={slot.id} className="border border-gray-200 rounded-xl p-3.5">
                         <div className="flex justify-between items-start">
