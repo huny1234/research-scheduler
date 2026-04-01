@@ -352,7 +352,7 @@ export default function AdminPage() {
                           <span className="text-sm font-semibold text-gray-800">
                             {fmtDate(slot.date)} {fmt(slot.time_slot)}
                           </span>
-                          {slot.is_booked && slot.bookings[0] && (
+                          {slot.is_booked && slot.bookings?.[0] && (
                             <span className="ml-2 text-xs text-blue-600">
                               {slot.bookings[0].participant_name}
                             </span>
@@ -418,7 +418,7 @@ export default function AdminPage() {
                 <div className="space-y-3">
                   <p className="text-xs text-gray-400">총 {bookedSlots.length}건</p>
                   {bookedSlots.map((slot) => {
-                    const b = slot.bookings[0]
+                    const b = slot.bookings?.[0]
                     const m = b?.measurements[0]
                     return (
                       <div key={slot.id} className="border border-gray-200 rounded-xl p-3.5">

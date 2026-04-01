@@ -80,7 +80,7 @@ export default function TodayPage() {
 
   function openModal(slot: TodaySlot) {
     setSelectedSlot(slot)
-    const m = slot.bookings[0]?.measurements[0]
+    const m = slot.bookings?.[0]?.measurements[0]
     setHeight(m ? String(m.height) : '')
     setWeight(m ? String(m.weight) : '')
     setGrip(m ? String(m.grip_strength) : '')
@@ -208,7 +208,7 @@ export default function TodayPage() {
         ) : (
           <div className="space-y-3">
             {slots.map((slot) => {
-              const booking = slot.bookings[0]
+              const booking = slot.bookings?.[0]
               const measurement = booking?.measurements[0]
               const canInput = isAdmin && !!booking
 
