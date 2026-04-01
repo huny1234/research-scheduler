@@ -50,7 +50,7 @@ export default function HomePage() {
   const monthStr = `${viewYear}-${String(viewMonth).padStart(2, '0')}`
 
   const fetchMonthSlots = useCallback(async () => {
-    const res = await fetch(`/api/slots?month=${monthStr}`)
+    const res = await fetch(`/api/slots?month=${monthStr}`, { cache: 'no-store' })
     const data = await res.json()
     setMonthSlots(Array.isArray(data) ? data : [])
   }, [monthStr])
@@ -60,7 +60,7 @@ export default function HomePage() {
   }, [fetchMonthSlots])
 
   async function fetchDaySlots(date: string) {
-    const res = await fetch(`/api/slots?date=${date}`)
+    const res = await fetch(`/api/slots?date=${date}`, { cache: 'no-store' })
     const data = await res.json()
     setDaySlots(Array.isArray(data) ? data : [])
   }

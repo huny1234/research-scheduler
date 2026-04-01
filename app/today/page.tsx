@@ -59,7 +59,7 @@ export default function TodayPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch(`/api/bookings?date=${todayStr}`)
+      const res = await fetch(`/api/bookings?date=${todayStr}`, { cache: 'no-store' })
       const data = await res.json()
       setSlots(Array.isArray(data) ? data : [])
     } finally {

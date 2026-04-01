@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
       .order('time_slot')
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json(data)
+    return NextResponse.json(data, { headers: { 'Cache-Control': 'no-store' } })
   }
 
   if (month) {
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       .lte('date', endDate)
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json(data)
+    return NextResponse.json(data, { headers: { 'Cache-Control': 'no-store' } })
   }
 
   return NextResponse.json({ error: 'month 또는 date 파라미터가 필요합니다.' }, { status: 400 })

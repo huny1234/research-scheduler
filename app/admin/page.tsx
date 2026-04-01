@@ -140,7 +140,7 @@ export default function AdminPage() {
       const p = new URLSearchParams()
       if (viewFrom) p.set('from', viewFrom)
       if (viewTo) p.set('to', viewTo)
-      const res = await fetch(`/api/admin/slots?${p}`)
+      const res = await fetch(`/api/admin/slots?${p}`, { cache: 'no-store' })
       const data = await res.json()
       setSlots(Array.isArray(data) ? data : [])
     } finally { setLoadingSlots(false) }

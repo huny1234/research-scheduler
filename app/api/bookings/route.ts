@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     .order('time_slot')
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+  return NextResponse.json(data, { headers: { 'Cache-Control': 'no-store' } })
 }
 
 // POST /api/bookings - 예약 신청
