@@ -43,6 +43,7 @@ export default function TodayPage() {
 
   const [selectedSlot, setSelectedSlot] = useState<TodaySlot | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
   const [height, setHeight] = useState('')
   const [weight, setWeight] = useState('')
   const [grip, setGrip] = useState('')
@@ -79,8 +80,9 @@ export default function TodayPage() {
   }, [fetchData])
 
   function openModal(slot: TodaySlot) {
-    setSelectedSlot(slot)
     const m = slot.bookings?.[0]?.measurements?.[0]
+    setSelectedSlot(slot)
+    setIsEditing(!!m)
     setHeight(m ? String(m.height) : '')
     setWeight(m ? String(m.weight) : '')
     setGrip(m ? String(m.grip_strength) : '')
@@ -98,22 +100,48 @@ export default function TodayPage() {
 
     setSaving(true)
     setSaveError('')
+
+    const h = parseFloat(height)
+    const w = parseFloat(weight)
+    const bmi = parseFloat((w / ((h / 100) ** 2)).toFixed(2))
+    const g = parseFloat(grip)
+
     try {
       const res = await fetch('/api/measurements', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           booking_id: booking.id,
-          height: parseFloat(height),
-          weight: parseFloat(weight),
-          grip_strength: parseFloat(grip),
+          height: h,
+          weight: w,
+          grip_strength: g,
         }),
       })
       const data = await res.json()
       if (!res.ok) {
         setSaveError(data.error || '저장 실패')
       } else {
+        // 로컬 상태 즉시 업데이트
+        setSlots((prev) =>
+          prev.map((s) => {
+            if (s.id !== selectedSlot.id) return s
+            return {
+              ...s,
+              bookings: s.bookings?.map((b) =>
+                b.id !== booking.id
+                  ? b
+                  : {
+                      ...b,
+                      measurements: [
+                        { id: data.id, height: h, weight: w, bmi, grip_strength: g },
+                      ],
+                    }
+              ) ?? s.bookings,
+            }
+          })
+        )
         setShowModal(false)
+        // 백그라운드에서 서버 데이터 동기화
         fetchData()
       }
     } catch {
@@ -154,26 +182,19 @@ export default function TodayPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 헤더 */}
       <header className="bg-blue-600 text-white px-4 py-4 shadow">
         <div className="max-w-lg mx-auto flex justify-between items-center">
           <div>
             <h1 className="text-xl font-bold">오늘의 일정</h1>
-            <p className="text-blue-200 text-sm">
-              {todayKorean} ({dayName}요일)
-            </p>
+            <p className="text-blue-200 text-sm">{todayKorean} ({dayName}요일)</p>
           </div>
-          <Link
-            href="/"
-            className="text-sm bg-white text-blue-600 px-3 py-1.5 rounded-full font-semibold"
-          >
+          <Link href="/" className="text-sm bg-white text-blue-600 px-3 py-1.5 rounded-full font-semibold">
             예약하기
           </Link>
         </div>
       </header>
 
       <main className="max-w-lg mx-auto p-4 space-y-4">
-        {/* 요약 카드 */}
         <div className="grid grid-cols-3 gap-3">
           {[
             { label: '전체 슬롯', value: slots.length, color: 'text-blue-600' },
@@ -187,17 +208,13 @@ export default function TodayPage() {
           ))}
         </div>
 
-        {/* 관리자 표시 */}
         {isAdmin && (
           <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-2.5 text-sm text-green-700 flex justify-between items-center">
-            <span>관리자 모드 — 측정값 입력 가능</span>
-            <Link href="/admin" className="text-green-600 font-semibold text-xs underline">
-              관리 패널
-            </Link>
+            <span>관리자 모드 — 측정값 입력/수정 가능</span>
+            <Link href="/admin" className="text-green-600 font-semibold text-xs underline">관리 패널</Link>
           </div>
         )}
 
-        {/* 일정 목록 */}
         {loading ? (
           <div className="text-center py-16 text-gray-400">불러오는 중...</div>
         ) : slots.length === 0 ? (
@@ -237,7 +254,7 @@ export default function TodayPage() {
                       <div>
                         {measurement ? (
                           <span className="bg-purple-100 text-purple-700 text-xs px-2.5 py-1 rounded-full font-medium">
-                            측정 완료
+                            {isAdmin ? '측정 완료 (수정 ›)' : '측정 완료'}
                           </span>
                         ) : (
                           <span className="bg-yellow-100 text-yellow-700 text-xs px-2.5 py-1 rounded-full font-medium">
@@ -248,8 +265,7 @@ export default function TodayPage() {
                     )}
                   </div>
 
-                  {/* 측정값 미리보기 (관리자) */}
-                  {measurement && isAdmin && (
+                  {measurement && (
                     <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-4 gap-2 text-xs text-center text-gray-600">
                       <div>
                         <p className="text-gray-400">키</p>
@@ -276,7 +292,6 @@ export default function TodayPage() {
         )}
       </main>
 
-      {/* 측정값 입력 모달 */}
       {showModal && selectedSlot && (
         <div
           className="fixed inset-0 bg-black/50 flex items-end justify-center z-50"
@@ -285,17 +300,14 @@ export default function TodayPage() {
           <div className="bg-white rounded-t-3xl p-6 w-full max-w-lg">
             <div className="flex justify-between items-start mb-5">
               <div>
-                <h3 className="text-xl font-bold text-gray-800">측정값 입력</h3>
+                <h3 className="text-xl font-bold text-gray-800">
+                  {isEditing ? '측정값 수정' : '측정값 입력'}
+                </h3>
                 <p className="text-sm text-gray-400 mt-0.5">
                   {formatTime(selectedSlot.time_slot)} — {selectedSlot.bookings?.[0]?.participant_name}
                 </p>
               </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-gray-400 text-3xl leading-none"
-              >
-                ×
-              </button>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 text-3xl leading-none">×</button>
             </div>
 
             <div className="space-y-4">
@@ -327,8 +339,7 @@ export default function TodayPage() {
               {bmiPreview && (
                 <div className="bg-blue-50 rounded-xl p-3 text-center">
                   <span className="text-sm text-blue-600">
-                    BMI 자동 계산:{' '}
-                    <span className="font-bold text-xl">{bmiPreview}</span>
+                    BMI 자동 계산: <span className="font-bold text-xl">{bmiPreview}</span>
                   </span>
                 </div>
               )}
@@ -361,7 +372,7 @@ export default function TodayPage() {
                   disabled={saving}
                   className="flex-1 bg-blue-600 text-white py-3.5 rounded-2xl font-bold disabled:opacity-50"
                 >
-                  {saving ? '저장 중...' : '저장'}
+                  {saving ? '저장 중...' : isEditing ? '수정 완료' : '저장'}
                 </button>
               </div>
             </div>
