@@ -54,6 +54,15 @@ export default function AdminPage() {
 
   const [tab, setTab] = useState<Tab>('slots')
 
+  // 측정값 입력/수정 모달
+  const [showMeasureModal, setShowMeasureModal] = useState(false)
+  const [measureSlot, setMeasureSlot] = useState<SlotWithBooking | null>(null)
+  const [mHeight, setMHeight] = useState('')
+  const [mWeight, setMWeight] = useState('')
+  const [mGrip, setMGrip] = useState('')
+  const [mSaving, setMSaving] = useState(false)
+  const [mError, setMError] = useState('')
+
   // 슬롯 생성
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
@@ -153,6 +162,64 @@ export default function AdminPage() {
     else {
       const d = await res.json()
       alert(d.error || '삭제 실패')
+    }
+  }
+
+  function openMeasureModal(slot: SlotWithBooking) {
+    const m = slot.bookings?.[0]?.measurements?.[0]
+    setMeasureSlot(slot)
+    setMHeight(m ? String(m.height) : '')
+    setMWeight(m ? String(m.weight) : '')
+    setMGrip(m ? String(m.grip_strength) : '')
+    setMError('')
+    setShowMeasureModal(true)
+  }
+
+  async function handleMeasureSave() {
+    if (!measureSlot || !mHeight || !mWeight || !mGrip) {
+      setMError('모든 값을 입력해주세요.')
+      return
+    }
+    const booking = measureSlot.bookings?.[0]
+    if (!booking) return
+
+    setMSaving(true)
+    setMError('')
+
+    const h = parseFloat(mHeight)
+    const w = parseFloat(mWeight)
+    const bmi = parseFloat((w / ((h / 100) ** 2)).toFixed(2))
+    const g = parseFloat(mGrip)
+
+    try {
+      const res = await fetch('/api/measurements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ booking_id: booking.id, height: h, weight: w, grip_strength: g }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setMError(data.error || '저장 실패')
+      } else {
+        // 로컬 상태 즉시 업데이트
+        setSlots(prev => prev.map(s => {
+          if (s.id !== measureSlot.id) return s
+          return {
+            ...s,
+            bookings: s.bookings?.map(b =>
+              b.id !== booking.id ? b : {
+                ...b,
+                measurements: [{ height: h, weight: w, bmi, grip_strength: g }],
+              }
+            ) ?? s.bookings,
+          }
+        }))
+        setShowMeasureModal(false)
+      }
+    } catch {
+      setMError('네트워크 오류가 발생했습니다.')
+    } finally {
+      setMSaving(false)
     }
   }
 
@@ -421,7 +488,11 @@ export default function AdminPage() {
                     const b = slot.bookings?.[0]
                     const m = b?.measurements?.[0]
                     return (
-                      <div key={slot.id} className="border border-gray-200 rounded-xl p-3.5">
+                      <div
+                        key={slot.id}
+                        className="border border-gray-200 rounded-xl p-3.5 cursor-pointer hover:shadow-md transition-shadow"
+                        onClick={() => openMeasureModal(slot)}
+                      >
                         <div className="flex justify-between items-start">
                           <div>
                             <p className="font-bold text-gray-800">{b?.participant_name}</p>
@@ -434,10 +505,10 @@ export default function AdminPage() {
                             <div className="text-right text-xs text-gray-500 space-y-0.5">
                               <p>키 {m.height}cm / 체중 {m.weight}kg</p>
                               <p>BMI {m.bmi} / 악력 {m.grip_strength}kg</p>
-                              <span className="inline-block bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full text-xs">측정 완료</span>
+                              <span className="inline-block bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full text-xs">측정 완료 (수정 ›)</span>
                             </div>
                           ) : (
-                            <span className="bg-yellow-100 text-yellow-600 text-xs px-2 py-1 rounded-full">미측정</span>
+                            <span className="bg-yellow-100 text-yellow-600 text-xs px-2 py-1 rounded-full">입력 필요 ›</span>
                           )}
                         </div>
                       </div>
@@ -474,5 +545,88 @@ export default function AdminPage() {
         </div>
       </div>
     </div>
+
+    {/* 측정값 입력/수정 모달 */}
+    {showMeasureModal && measureSlot && (
+      <div
+        className="fixed inset-0 bg-black/50 flex items-end justify-center z-50"
+        onClick={(e) => e.target === e.currentTarget && setShowMeasureModal(false)}
+      >
+        <div className="bg-white rounded-t-3xl p-6 w-full max-w-lg">
+          <div className="flex justify-between items-start mb-5">
+            <div>
+              <h3 className="text-xl font-bold text-gray-800">
+                {measureSlot.bookings?.[0]?.measurements?.[0] ? '측정값 수정' : '측정값 입력'}
+              </h3>
+              <p className="text-sm text-gray-400 mt-0.5">
+                {fmtDate(measureSlot.date)} {fmt(measureSlot.time_slot)} — {measureSlot.bookings?.[0]?.participant_name}
+              </p>
+            </div>
+            <button onClick={() => setShowMeasureModal(false)} className="text-gray-400 text-3xl leading-none">×</button>
+          </div>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">키 (cm)</label>
+                <input
+                  type="number" step="0.1" value={mHeight}
+                  onChange={(e) => setMHeight(e.target.value)}
+                  placeholder="예: 170.5"
+                  className="w-full border border-gray-300 rounded-xl px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">체중 (kg)</label>
+                <input
+                  type="number" step="0.1" value={mWeight}
+                  onChange={(e) => setMWeight(e.target.value)}
+                  placeholder="예: 65.0"
+                  className="w-full border border-gray-300 rounded-xl px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            {mHeight && mWeight && (
+              <div className="bg-blue-50 rounded-xl p-3 text-center">
+                <span className="text-sm text-blue-600">
+                  BMI 자동 계산: <span className="font-bold text-xl">
+                    {(parseFloat(mWeight) / (parseFloat(mHeight) / 100) ** 2).toFixed(1)}
+                  </span>
+                </span>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">악력 (kg)</label>
+              <input
+                type="number" step="0.1" value={mGrip}
+                onChange={(e) => setMGrip(e.target.value)}
+                placeholder="예: 35.2"
+                className="w-full border border-gray-300 rounded-xl px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {mError && <p className="text-red-500 text-sm bg-red-50 rounded-lg px-3 py-2">{mError}</p>}
+
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setShowMeasureModal(false)}
+                className="flex-1 border border-gray-300 text-gray-600 py-3.5 rounded-2xl font-semibold"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleMeasureSave}
+                disabled={mSaving}
+                className="flex-1 bg-blue-600 text-white py-3.5 rounded-2xl font-bold disabled:opacity-50"
+              >
+                {mSaving ? '저장 중...' : measureSlot.bookings?.[0]?.measurements?.[0] ? '수정 완료' : '저장'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
   )
 }
