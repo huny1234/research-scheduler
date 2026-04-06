@@ -345,7 +345,7 @@ export default function TodayPage() {
               )}
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">VO2max (kg)</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">VO2max (mL/kg/min)</label>
                 <input
                   type="number"
                   step="0.1"

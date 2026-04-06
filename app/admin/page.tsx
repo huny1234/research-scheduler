@@ -591,7 +591,7 @@ export default function AdminPage() {
                           {m ? (
                             <div className="text-right text-xs text-gray-500 space-y-0.5">
                               <p>키 {m.height}cm / 체중 {m.weight}kg</p>
-                              <p>BMI {m.bmi} / VO2max {m.grip_strength}kg</p>
+                              <p>BMI {m.bmi} / VO2max {m.grip_strength}mL/kg/min</p>
                               <span className="inline-block bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full text-xs">측정 완료 (수정 ›)</span>
                             </div>
                           ) : (
@@ -692,7 +692,7 @@ export default function AdminPage() {
             )}
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">VO2max (kg)</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">VO2max (mL/kg/min)</label>
               <input
                 type="number" step="0.1" value={mGrip}
                 onChange={(e) => setMGrip(e.target.value)}

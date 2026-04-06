@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
 
   const headers = [
     '이름', '생년월일', '예약날짜', '예약시간', '예약신청일시',
-    '키(cm)', '체중(kg)', 'BMI', 'VO2max', '측정일시',
+    '키(cm)', '체중(kg)', 'BMI', 'VO2max(mL/kg/min)', '측정일시',
   ]
 
   const rows = (data as any[]).map((b) => [
