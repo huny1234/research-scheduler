@@ -598,7 +598,16 @@ export default function AdminPage() {
                             <span className="bg-yellow-100 text-yellow-600 text-xs px-2 py-1 rounded-full">입력 필요 ›</span>
                           )}
                         </div>
-                        <div className="mt-2 pt-2 border-t border-gray-100 flex justify-end">
+                        <div className="mt-2 pt-2 border-t border-gray-100 flex justify-between items-center">
+                          <a
+                            href={`/survey/${b?.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg font-semibold"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            설문 시작 →
+                          </a>
                           <button
                             onClick={() => b && cancelBooking(b.id, slot.id)}
                             className="text-xs text-red-400 hover:text-red-600"
@@ -625,16 +634,29 @@ export default function AdminPage() {
                 Excel에서 바로 열 수 있는 형식입니다.
               </p>
 
-              <button
-                onClick={() => { window.location.href = '/api/admin/export' }}
-                className="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg transition-colors"
-              >
-                CSV 다운로드
-              </button>
+              <div className="space-y-3">
+                <button
+                  onClick={() => { window.location.href = '/api/admin/export' }}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-bold text-lg transition-colors"
+                >
+                  측정 데이터 CSV 다운로드
+                </button>
+                <p className="text-xs text-gray-400">
+                  포함 항목: 이름, 생년월일, 예약일시, 키, 체중, BMI, VO2max
+                </p>
 
-              <p className="text-xs text-gray-400 mt-4">
-                포함 항목: 이름, 생년월일, 예약일시, 키, 체중, BMI, VO2max
-              </p>
+                <div className="border-t border-gray-100 pt-4 mt-2">
+                  <button
+                    onClick={() => { window.location.href = '/api/admin/survey-export' }}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white py-4 rounded-2xl font-bold text-lg transition-colors"
+                  >
+                    설문 데이터 CSV 다운로드
+                  </button>
+                  <p className="text-xs text-gray-400 mt-3">
+                    포함 항목: 이름, 생년월일, 예약일시, Q1 성함, Q2 나이, Q3 개인정보동의
+                  </p>
+                </div>
+              </div>
             </div>
           )}
         </div>
