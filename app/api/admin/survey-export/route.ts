@@ -11,8 +11,7 @@ export async function GET(request: NextRequest) {
   // surveys + bookings + slots 조인
   const { data: surveys, error } = await supabaseAdmin
     .from('surveys')
-    .select('booking_id, q1_name, q2_age, q3_consent, created_at')
-    .order('created_at')
+    .select('booking_id, q1_name, q2_age, q3_consent')
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -46,7 +45,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const headers = ['이름(예약)', '생년월일', '예약날짜', '예약시간', 'Q1_성함', 'Q2_나이', 'Q3_개인정보동의(1-5)', '설문제출일시']
+  const headers = ['이름(예약)', '생년월일', '예약날짜', '예약시간', 'Q1_성함', 'Q2_나이', 'Q3_개인정보동의(1-5)']
 
   const rows = (surveys ?? []).map((s) => {
     const booking = bookingMap[s.booking_id]
@@ -59,7 +58,6 @@ export async function GET(request: NextRequest) {
       s.q1_name,
       s.q2_age,
       s.q3_consent,
-      s.created_at ? new Date(s.created_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) : '',
     ]
   })
 
