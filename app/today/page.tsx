@@ -280,7 +280,7 @@ export default function TodayPage() {
                         <p className="font-semibold">{measurement.bmi}</p>
                       </div>
                       <div>
-                        <p className="text-gray-400">악력</p>
+                        <p className="text-gray-400">VO2max</p>
                         <p className="font-semibold">{measurement.grip_strength}kg</p>
                       </div>
                     </div>
@@ -345,7 +345,7 @@ export default function TodayPage() {
               )}
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">악력 (kg)</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">VO2max (kg)</label>
                 <input
                   type="number"
                   step="0.1"

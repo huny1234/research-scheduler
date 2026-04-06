@@ -591,7 +591,7 @@ export default function AdminPage() {
                           {m ? (
                             <div className="text-right text-xs text-gray-500 space-y-0.5">
                               <p>키 {m.height}cm / 체중 {m.weight}kg</p>
-                              <p>BMI {m.bmi} / 악력 {m.grip_strength}kg</p>
+                              <p>BMI {m.bmi} / VO2max {m.grip_strength}kg</p>
                               <span className="inline-block bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full text-xs">측정 완료 (수정 ›)</span>
                             </div>
                           ) : (
@@ -633,7 +633,7 @@ export default function AdminPage() {
               </button>
 
               <p className="text-xs text-gray-400 mt-4">
-                포함 항목: 이름, 생년월일, 예약일시, 키, 체중, BMI, 악력
+                포함 항목: 이름, 생년월일, 예약일시, 키, 체중, BMI, VO2max
               </p>
             </div>
           )}
@@ -692,7 +692,7 @@ export default function AdminPage() {
             )}
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">악력 (kg)</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">VO2max (kg)</label>
               <input
                 type="number" step="0.1" value={mGrip}
                 onChange={(e) => setMGrip(e.target.value)}
