@@ -78,6 +78,7 @@ export default function AdminPage() {
   const [loadingSlots, setLoadingSlots] = useState(false)
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set())
   const [bulkDeleting, setBulkDeleting] = useState(false)
+  const [surveySet, setSurveySet] = useState<Set<string>>(new Set()) // 설문 완료된 booking ID 집합
 
   useEffect(() => {
     fetch('/api/admin/check')
@@ -153,7 +154,20 @@ export default function AdminPage() {
       if (viewTo) p.set('to', viewTo)
       const res = await fetch(`/api/admin/slots?${p}`, { cache: 'no-store' })
       const data = await res.json()
-      setSlots(Array.isArray(data) ? data : [])
+      const slotsData: SlotWithBooking[] = Array.isArray(data) ? data : []
+      setSlots(slotsData)
+
+      // 예약된 booking ID 모아서 설문 완료 여부 조회
+      const bookingIds = slotsData
+        .filter((s) => s.is_booked && s.bookings?.[0])
+        .map((s) => s.bookings[0].id)
+      if (bookingIds.length > 0) {
+        const sRes = await fetch(`/api/admin/surveys?bookingIds=${bookingIds.join(',')}`, { cache: 'no-store' })
+        const sData = await sRes.json()
+        setSurveySet(new Set((sData as { booking_id: string }[]).map((s) => s.booking_id)))
+      } else {
+        setSurveySet(new Set())
+      }
     } finally { setLoadingSlots(false) }
   }
 
@@ -603,10 +617,14 @@ export default function AdminPage() {
                             href={`/survey/${b?.id}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg font-semibold"
+                            className={`text-xs px-3 py-1.5 rounded-lg font-semibold ${
+                              b && surveySet.has(b.id)
+                                ? 'bg-green-50 text-green-600 hover:bg-green-100'
+                                : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                            }`}
                             onClick={(e) => e.stopPropagation()}
                           >
-                            설문 시작 →
+                            {b && surveySet.has(b.id) ? '설문 완료 (수정 ›)' : '설문 시작 →'}
                           </a>
                           <button
                             onClick={() => b && cancelBooking(b.id, slot.id)}
